@@ -8,6 +8,9 @@
 
 4：进入面板：附加功能--Setup Node.js APP，CREATE APPLICATION，运行两次
 
+   public_html
+   index.js
+
 5：域名/UUID，浏览器访问可见链接地址
 
 6：CREATE APPLICATION出现异常提醒、APP无法删除？后续更新教程视频
