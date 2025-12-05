@@ -7,7 +7,7 @@ const PORT   = (process.env.PORT   || "53456").trim(); // 端口范围建议 100
 const DOMAIN = (process.env.DOMAIN || "your-domain.example.com").trim(); // 托管到CF的域名（带前缀） 
 
 // Panel
-const NAME   = "easyshare";
+const NAME   = "DirectAdmin-eishare";
 
 const BEST_DOMAINS = [
   "www.visa.cn",
