@@ -1,46 +1,92 @@
-process.on("uncaughtException",()=>{});process.on("unhandledRejection",()=>{});
+// ================= 仅需修改两个变量 =================
+const UUID   = (process.env.UUID   || "0cbbd5b1-2ba6-405f-b71d-03c92cb7b6e8").trim();
+const DOMAIN = (process.env.DOMAIN || "mywork.dpdns.org").trim();
 
-const UUID   = (process.env.UUID   ?? "0cbbd5b1-2ba6-405f-b71d-03c92cb7b6e8").trim();
-const DOMAIN = (process.env.DOMAIN ?? "demo.example.com").trim();
-const PORT   = Number(process.env.PORT) || 0;
+// ================= 基础设置 =================
+const NAME = "DirectAdmin-eishare";
+const BEST_DOMAINS = [
+  "www.visa.cn", "usa.visa.com", "www.wto.org", "shopify.com",
+  "time.is", "www.digitalocean.com", "www.visa.com.hk", "www.udemy.com"
+];
 
+console.log("DA-BOOT: Starting lightweight VLESS-WS-TLS ...");
+
+// ================= 模块 =================
 const http = require("http");
-const net  = require("net");
-const ws   = require("ws");
+const net = require("net");
+const { WebSocketServer } = require("ws");
 
-const ADDR = ["www.visa.cn","usa.visa.com","time.is","www.wto.org"];
-const hex  = UUID.replace(/-/g,"");
-let c = 0;
+// ================= 节点生成 =================
+function genLink(host) {
+  return `vless://${UUID}@${host}:443?encryption=none&security=tls&sni=${DOMAIN}&type=ws&host=${DOMAIN}&path=%2F#${NAME}`;
+}
 
-const server = http.createServer((q,r)=>{
-  q.url===`/${UUID}` ? r.end(ADDR.map(a=>`vless://${UUID}@${a}:443?encryption=none&security=tls&sni=${DOMAIN}&fp=chrome&type=ws&host=${DOMAIN}&path=%2F#DA-${a}`).join("\n")+"\n") : r.end("OK");
+// ================= HTTP 服务 =================
+const server = http.createServer((req, res) => {
+  if (req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    return res.end(`VLESS-WS-TLS Running\n访问 /${UUID} 查看全部节点\n`);
+  }
+
+  if (req.url === `/${UUID}`) {
+    let txt = "═════ easyshare VLESS-WS-TLS 节点 ═════\n\n";
+    BEST_DOMAINS.forEach(d => txt += genLink(d) + "\n\n");
+    txt += "节点已全部生成，可直接复制使用。\n";
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    return res.end(txt);
+  }
+
+  res.writeHead(404);
+  res.end("404 Not Found");
 });
 
-new ws.Server({server}).on("connection",s=>{
-  if(c++>14){s.close(1008);return}
-  s.on("close",()=>{c--;r?.destroy()});
-  let r;
-  s.once("message",m=>{
-    try{
-      if(m.length<34)return s.close();  // 最小握手包长度检查
-      for(let i=0;i<16;i++)if(m[1+i]!==parseInt(hex.substr(i*2,2),16))return s.close();
-      let p=17;
-      const port=m.readUInt16BE(p);p+=2;
-      if(m[p++]!==1||m.length<p+4)return s.close();
-      const b1=m[p++],b2=m[p++],b3=m[p++],b4=m[p++];  // 临时变量防错位
-      const ip=`${b1}.${b2}.${b3}.${b4}`;
-      console.log(`VLESS handshake OK: ${ip}:${port}`);  // 调试日志
-      s.send(new Uint8Array([m[0],0]));
-      r=net.connect(port,ip,()=>{r.write(m.slice(p))});
-      s.on("message",d=>r.write(d));
-      r.on("data",d=>s.send(d));
-      r.on("end",()=>s.close());
-      r.on("error",()=>s.close());
-      s.on("close",()=>r?.destroy());
-    }catch{s.close()}
+// ================= WebSocket 后端（精简+稳定版本） =================
+const wss = new WebSocketServer({ server });
+const uuidHex = UUID.replace(/-/g, "").toLowerCase();
+
+wss.on("connection", ws => {
+  ws.once("message", data => {
+    // ====== 最精简 UUID 校验 ======
+    if (data.length < 18) return ws.close();
+    const rec = data.slice(1, 17).toString("hex");
+    if (rec !== uuidHex) return ws.close();
+
+    // 回复握手成功
+    ws.send(Buffer.from([data[0], 0]));
+
+    // ====== 读取目标地址 ======
+    let p = 17 + 2; // skip version & optLen
+    const port = data.readUInt16BE(p - 2);
+    const atyp = data[p++];
+
+    let host;
+    if (atyp === 1) host = Array.from(data.slice(p, p += 4)).join(".");
+    else if (atyp === 2) {
+      const len = data[p++];
+      host = data.slice(p, p += len).toString();
+    } else return ws.close();
+
+    // ====== 建立 TCP ======
+    const tcp = net.connect({ host, port }, () => {
+      tcp.write(data.slice(p)); // 余量数据写入
+    });
+
+    tcp.on("error", () => ws.close());
+
+    // WS <-> TCP 双向转发（稳定写法）
+    ws.on("message", msg => tcp.write(msg));
+    tcp.on("data", d => ws.send(d));
+    ws.on("close", () => tcp.destroy());
+    tcp.on("close", () => ws.close());
   });
 });
 
-server.listen(PORT,"127.0.0.1",()=>{
-  console.log(`VLESS OK → 127.0.0.1:${server.address().port}`);
+// ================= 启动 =================
+server.listen(3000, "0.0.0.0", () => {
+  console.log("===============================================");
+  console.log(" VLESS-WS-TLS √ 启动成功（精简稳定版）");
+  console.log("===============================================");
+  console.log("\n节点一览：\n");
+  BEST_DOMAINS.forEach((d, i) => console.log(`${i+1}. ${genLink(d)}\n`));
+  console.log(`访问路径： /${UUID}\n`);
 });
