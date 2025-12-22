@@ -10,7 +10,7 @@ const BEST_DOMAINS = [
     "www.visa.cn",
     "usa.visa.com",
     "www.wto.org",
-    "shopify.com",
+    "www.shopify.com",
     "time.is",
     "www.digitalocean.com",
     "www.visa.com.hk",
