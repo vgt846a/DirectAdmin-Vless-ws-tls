@@ -24,7 +24,9 @@
 
      *然后：
            CREATE APPLICATION
+  
            run npm install
-           运行js
+  
+           运行js--点击start--运行
    
 * 4：浏览器访问 域名/UUID，可见节点链接地址
