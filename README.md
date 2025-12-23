@@ -23,7 +23,8 @@
           文件：index.js
 
      *然后：
-          1.CREATE APPLICATION
+
+  1.CREATE APPLICATION
 
   2.run npm install
 
