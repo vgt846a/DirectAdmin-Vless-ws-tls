@@ -20,15 +20,6 @@ const BEST_DOMAINS = [
 // ============================================================
 const http = require('http');
 const net = require('net');
-const { execSync } = require('child_process');
-
-// 自动安装 ws
-try {
-    require.resolve("ws");
-} catch (e) {
-    execSync("npm install ws", { stdio: 'inherit' });
-}
-
 const { WebSocket, createWebSocketStream } = require("ws");
 
 // ============================================================
