@@ -2,8 +2,8 @@ process.on("uncaughtException", () => {});
 process.on("unhandledRejection", () => {});
 
 // ====== 只修改两个核心变量 UUID/DOMAIN ======
-const UUID = (process.env.UUID || "d1dce07e-6d0e-4d0e-a2d5-a087be09925d").trim();        // 替换"双引号中的UUID"
-const DOMAIN = (process.env.DOMAIN || "y8.huang13.de5.net").trim();                    // 替换"双引号中的完整域名"
+const UUID = (process.env.UUID || "3dad8831-fcfb-4c8d-bad9-819eac36517c").trim();        // 替换"双引号中的UUID"
+const DOMAIN = (process.env.DOMAIN || "z1.huang12.de5.net").trim();                    // 替换"双引号中的完整域名"
  
 // Panel 配置
 const NAME = "DirectAdmin-easyshare";
